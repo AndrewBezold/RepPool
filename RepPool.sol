@@ -7,6 +7,14 @@
     -Add reporting capability
     -Add ability to retrieve earnings
     -Add enum results, maybe?
+    -Users deposit REP
+    -Approved withdraw REP
+    -Approved withdraw rewards
+    -Users withdraw rewards
+
+
+    DONE
+    -Users withdraw REP
 
 
     USE CASES
@@ -21,14 +29,15 @@
 
 */
 
-//#import "augur.sol" //don't know what the correct way to import Augur would be.
-//Also, I'd rather not clog my relatively small contract with the entirety of the Augur
-//code.  Is there a better way?
+//TODO include abstracts for code to be called, including basic token usage and augur
 
 contract RepPool {
 
-    address creator;
-    Augur public augur;
+    //address for reporting contract
+    Reporting public reporting;
+    //address for REP token
+    Rep public rep;
+    //list of addresses approved to report.  Change name, as possibly confusing, when tokens need to add this contract's address as approved to accept the tokens
     address[] public approved;
 
     //tokens and eth owned by pool members
@@ -41,49 +50,95 @@ contract RepPool {
     mapping(address => mapping(address => uint)) tokens_overflow;
     mapping(address => uint) eth_overflow;
 
-    //amount owned by creator - distributed as soon as it's deposited
-    uint creators_rep;
-    mapping(address => uint) creators_tokens
-    uint creators_eth;
+    //amount owned by approved - distributed as soon as it's deposited
+    uint approved_rep;
+    mapping(address => uint) approved_tokens
+    uint approved_eth;
 
-    function RepPool(address augurAddress) {
-        creator = msg.sender;
+    //TODO figure out how to check if value is in array
+    //TODO determine best practices for modifiers
+    modifier Approved() {
+        if(msg.sender is in approved) {
+            _
+        }
+    }
+
+    function RepPool(address augurAddress, address repAddress) {
         augur = Augur(augurAddress);
+	rep = Rep(repAddress);
         approved.push(msg.sender);
     }
 
+    //Must have "approved" contract to transfer Rep tokens
+    //TODO check that transferFrom generates exception correctly if something goes wrong
     function depositRep(uint amount) {
-        //check if sender has rep greater than or equal to "amount"
-        //if no, throw or return false or otherwise break
-        //if yes, receive rep, update rep_owned by adding "amount" to address mapping
+        rep.transferFrom(msg.sender, this, amount);
+        rep_owned[msg.sender] += amount;
     }
 
+    //Complete
     function withdrawRep(uint amount) {
-        //check if sender owns rep greater than or equal to "amount" deposited within contract
-        //if no, throw or return false or otherwise break
-        //if yes, send rep, update rep_owned by subtracting "amount" from address mapping
+        if(rep_owned[msg.sender] >= amount){
+            rep_owned[msg.sender] -= amount;
+            rep.transfer(msg.sender, amount);
+        }
     }
 
     function withdrawRewards() {
+        //for each token
+        if(tokens_owned[msg.sender][token] > 0){
+	    uint amount = tokens_owned[msg.sender][token];
+	    tokens_owned[msg.sender][token] = 0;
+            token.transfer(msg.sender, amount);
+	}
+	//end for
+	if(eth_owned[msg.sender] > 0){
+	    //send eth to msg.sender
+	}
+    }
 
-    }
-    
-    function report() {
-        //if sender address is in approved address array
-        //use Augur function to report result
-    }
-    
-    function() {
-        //possibly pointless function, only accept REP
-    }
-    
-    function setAugurAddress(address newAugur) {
-        if(msg.sender == creator){
-            augur = Augur(newAugur);
+    function withdrawApproved() Approved {
+        if(rep_approved > 0){
+	    uint amount = rep_approved;
+	    rep_approved = 0;
+	    rep.transfer(msg.sender, amount);
+        }
+	//for each token
+	if(tokens_approved[token] > 0){
+	    uint amount = tokens_approved[token];
+	    tokens_approved[token] = 0;
+	    token.transfer(msg.sender, amount);
+	}
+	if(eth_approved > 0){
+            //send eth to msg.sender
         }
     }
     
-    function update {
+    function report() Approved {
+        //if sender address is in approved address array
+        //use Augur function to report result
+    }
+
+    function reveal() Approved {
+
+    }
+    
+    function() {
+        //used only when Augur sends Eth.  All else is considered donations.
+	//I don't think the function needs to contain anything.
+    }
+
+    function updateTokenCount() {
+        //distribute tokens and update count when tokens are sent by Augur.
+	//Can't automatically read when tokens are sent, so have to do it on a timer.
+	//Do it either at the time they are sent, or as soon after as is feasible, to keep people from trying to get rewards twice by depositing after getting their rewards.  Maybe save a snapshot of the distribution, and distribute that way?
+    }
+    
+    function setAugurAddress(address newAugur) Approved {
+            augur = Augur(newAugur);
+    }
+    
+    function update() Approved{
     
     }
 
