@@ -33,6 +33,7 @@
 
 contract RepPool {
 
+    //list of addresses:  https://github.com/AugurProject/augur-contracts/blob/master/contracts.json
     //address for reporting contract
     Reporting public reporting;
     //address for REP token
@@ -113,14 +114,38 @@ contract RepPool {
             //send eth to msg.sender
         }
     }
-    
-    function report() Approved {
-        //if sender address is in approved address array
-        //use Augur function to report result
+
+    //!!!!There is a monster merge coming up between the develop and master branches of Augur, so things will change and I don't know which format will take precedence for each function.  The following four functions are the ones I'm worried about.  Can't set these in stone until after the merge.  Then we'll see.
+
+    //first half of the reporting period
+    function penalizeWrong() Approved {
+        //must be called at the beginning of the reporting period
+        penalizeWrong(uint256 branch, uint256 sender) returns number;
     }
 
-    function reveal() Approved {
+    //first half of the reporting period
+    function report(uint256 salt, uint256 report, uint256 event, uint256 ethics) Approved {
+        //if sender address is in approved address array
+        //use Augur function to report result
+	uint256 salt; //use as argument?  Have to keep track for when the report is revealed.
+	uint256 report; //this will have to be an argument, as this is the actual report.
+	uint256 eventID; //retrieve this somehow.  Maybe an argument.  Function to be looped through with an array of events?
+	uint256 sender = this; //assumed to be the address of this contract.
+	uint256 ethics;  //This is a flag for the ethicality of the event - 0 if unethical, 1 if ethical.  Use as argument
+	uint256 reportHash = report.makeHash(salt, report, event, sender, ethics) returns hash;
+	report.submitReportHash(uint256 event, uint256 reportHash, uint256 encryptedSaltyHash) returns number;
+    }
 
+    //second half of the reporting period
+    function reveal() Approved {
+        report.submitReport(uint256 event, uint256 salt, uint256 report, uint256 ethics) returns number;
+    }
+
+    //second half of the reporting period
+    //cannot send or receive pre-collection.  Therefore, if someone tries to call deposit or withdraw, call collectFees
+    //In the beginning of the function, check if collectFees was already called this 
+    function collectFees() {
+        collectFees(uint256 branch, uint256 sender) returns number;
     }
     
     function() {
@@ -132,6 +157,8 @@ contract RepPool {
         //distribute tokens and update count when tokens are sent by Augur.
 	//Can't automatically read when tokens are sent, so have to do it on a timer.
 	//Do it either at the time they are sent, or as soon after as is feasible, to keep people from trying to get rewards twice by depositing after getting their rewards.  Maybe save a snapshot of the distribution, and distribute that way?
+
+        //there's a function called collectFees, current thoughts is that the function distributes income based on rep held at the time of calling.  That could take care of my entire issue.
     }
     
     function setAugurAddress(address newAugur) Approved {
