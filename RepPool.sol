@@ -8,8 +8,8 @@
     -Add ability to retrieve earnings
     -Add enum results, maybe?
     -Users deposit REP
-    -Approved withdraw REP
-    -Approved withdraw rewards
+    -Admins withdraw REP
+    -Admins withdraw rewards
     -Users withdraw rewards
 
 
@@ -23,7 +23,7 @@
     -REP owner withdraws owed tokens and ETH
     -Creator withdraws owed tokens and ETH
     -Creator approves address for reporting
-    -Approved address reports
+    -Admin address reports
     -REP is received from Augur and distributed
     -Tokens and ETH is received from Augur and distributed
 
@@ -38,8 +38,8 @@ contract RepPool {
     Reporting public reporting;
     //address for REP token
     Rep public rep;
-    //list of addresses approved to report.  Change name, as possibly confusing, when tokens need to add this contract's address as approved to accept the tokens
-    address[] public approved;
+    //list of addresses approved to report
+    address[] public admin;
 
     //tokens and eth owned by pool members
     mapping(address => uint) rep_owned;
@@ -51,15 +51,15 @@ contract RepPool {
     mapping(address => mapping(address => uint)) tokens_overflow;
     mapping(address => uint) eth_overflow;
 
-    //amount owned by approved - distributed as soon as it's deposited
-    uint approved_rep;
-    mapping(address => uint) approved_tokens
-    uint approved_eth;
+    //amount owned by admins - distributed as soon as it's deposited
+    uint admin_rep;
+    mapping(address => uint) admin_tokens
+    uint admin_eth;
 
     //TODO figure out how to check if value is in array
     //TODO determine best practices for modifiers
-    modifier Approved() {
-        if(msg.sender is in approved) {
+    modifier isAdmin() {
+        if(msg.sender is in admin) {
             _
         }
     }
@@ -67,7 +67,7 @@ contract RepPool {
     function RepPool(address augurAddress, address repAddress) {
         augur = Augur(augurAddress);
 	rep = Rep(repAddress);
-        approved.push(msg.sender);
+        admin.push(msg.sender);
     }
 
     //Must have "approved" contract to transfer Rep tokens
@@ -98,19 +98,19 @@ contract RepPool {
 	}
     }
 
-    function withdrawApproved() Approved {
-        if(rep_approved > 0){
-	    uint amount = rep_approved;
-	    rep_approved = 0;
+    function withdrawAdmin() isAdmin {
+        if(admin > 0){
+	    uint amount = rep_admin;
+	    rep_admin = 0;
 	    rep.transfer(msg.sender, amount);
         }
 	//for each token
-	if(tokens_approved[token] > 0){
-	    uint amount = tokens_approved[token];
-	    tokens_approved[token] = 0;
+	if(tokens_admin[token] > 0){
+	    uint amount = tokens_admin[token];
+	    tokens_admin[token] = 0;
 	    token.transfer(msg.sender, amount);
 	}
-	if(eth_approved > 0){
+	if(eth_admin > 0){
             //send eth to msg.sender
         }
     }
@@ -118,14 +118,14 @@ contract RepPool {
     //!!!!There is a monster merge coming up between the develop and master branches of Augur, so things will change and I don't know which format will take precedence for each function.  The following four functions are the ones I'm worried about.  Can't set these in stone until after the merge.  Then we'll see.
 
     //first half of the reporting period
-    function penalizeWrong() Approved {
+    function penalizeWrong() Admin {
         //must be called at the beginning of the reporting period
         penalizeWrong(uint256 branch, uint256 sender) returns number;
     }
 
     //first half of the reporting period
-    function report(uint256 salt, uint256 report, uint256 event, uint256 ethics) Approved {
-        //if sender address is in approved address array
+    function report(uint256 salt, uint256 report, uint256 event, uint256 ethics) Admin {
+        //if sender address is in admin address array
         //use Augur function to report result
 	uint256 salt; //use as argument?  Have to keep track for when the report is revealed.
 	uint256 report; //this will have to be an argument, as this is the actual report.
@@ -137,7 +137,7 @@ contract RepPool {
     }
 
     //second half of the reporting period
-    function reveal() Approved {
+    function reveal() Admin {
         report.submitReport(uint256 event, uint256 salt, uint256 report, uint256 ethics) returns number;
     }
 
@@ -161,11 +161,11 @@ contract RepPool {
         //there's a function called collectFees, current thoughts is that the function distributes income based on rep held at the time of calling.  That could take care of my entire issue.
     }
     
-    function setAugurAddress(address newAugur) Approved {
+    function setAugurAddress(address newAugur) Admin {
             augur = Augur(newAugur);
     }
     
-    function update() Approved{
+    function update() Admin{
     
     }
 
