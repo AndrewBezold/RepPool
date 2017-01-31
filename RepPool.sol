@@ -132,7 +132,7 @@ contract RepPool {
         }
     }
 
-    //!!!!There is a monster merge coming up between the develop and master branches of Augur, so things will change and I don't know which format will take precedence for each function.  The following four functions are the ones I'm worried about.  Can't set these in stone until after the merge.  Then we'll see.
+    //Monster merge is done, following 4 functions need to be checked for correctness
 
     //first half of the reporting period
     function penalizeWrong() Admin {
@@ -144,18 +144,14 @@ contract RepPool {
     function report(uint256 salt, uint256 report, uint256 event, uint256 ethics) Admin {
         //if sender address is in admin address array
         //use Augur function to report result
-	uint256 salt; //use as argument?  Have to keep track for when the report is revealed.
-	uint256 report; //this will have to be an argument, as this is the actual report.
-	uint256 eventID; //retrieve this somehow.  Maybe an argument.  Function to be looped through with an array of events?
 	uint256 sender = this; //assumed to be the address of this contract.
-	uint256 ethics;  //This is a flag for the ethicality of the event - 0 if unethical, 1 if ethical.  Use as argument
-	uint256 reportHash = report.makeHash(salt, report, event, sender, ethics) returns hash;
-	report.submitReportHash(uint256 event, uint256 reportHash, uint256 encryptedSaltyHash) returns number;
+	uint256 reportHash = report.makeHash(salt, report, event, this, ethics) returns hash;
+	report.submitReportHash(event, reportHash, encryptedSaltyHash) returns number;
     }
 
     //second half of the reporting period
-    function reveal() Admin {
-        report.submitReport(uint256 event, uint256 salt, uint256 report, uint256 ethics) returns number;
+    function reveal(uint256 event, uint256 salt, uint256 report, uint256 ethics) Admin {
+        report.submitReport(event, salt, report, ethics) returns number;
     }
 
     //second half of the reporting period
