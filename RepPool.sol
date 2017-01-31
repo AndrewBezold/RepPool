@@ -11,6 +11,7 @@
     -Admins withdraw REP
     -Admins withdraw rewards
     -Users withdraw rewards
+    -Admins change accepted tokens
 
 
     DONE
@@ -40,6 +41,8 @@ contract RepPool {
     Rep public rep;
     //list of addresses approved to report
     address[] public admin;
+    //list of tokens accepted by Augur and, by extension, RepPool
+    address[] public tokens;
 
     //tokens and eth owned by pool members
     mapping(address => uint) rep_owned;
@@ -87,14 +90,21 @@ contract RepPool {
 
     function withdrawRewards() {
         //for each token
-        if(tokens_owned[msg.sender][token] > 0){
-	    uint amount = tokens_owned[msg.sender][token];
-	    tokens_owned[msg.sender][token] = 0;
-            token.transfer(msg.sender, amount);
+	for(uint i = 0; i < tokens.length; i++){
+	    if(tokens_owned[msg.sender][tokens[i]] > 0){
+	        uint amount = tokens_owned[msg.sender][tokens[i]];
+	        tokens_owned[msg.sender][tokens[i]] = 0;
+	        Token(tokens[i]).transfer(msg.sender, amount);
+	    }
 	}
 	//end for
 	if(eth_owned[msg.sender] > 0){
 	    //send eth to msg.sender
+	    uint amount = eth_owned[msg.sender];
+	    eth_owned[msg.sender] = 0;
+	    if(!send(msg.sender)){
+	        throw;
+	    }
 	}
     }
 
@@ -105,13 +115,20 @@ contract RepPool {
 	    rep.transfer(msg.sender, amount);
         }
 	//for each token
-	if(tokens_admin[token] > 0){
-	    uint amount = tokens_admin[token];
-	    tokens_admin[token] = 0;
-	    token.transfer(msg.sender, amount);
+	for(uint i = 0; i < tokens.length; i++){
+	    if(tokens_admin[tokens[i]] > 0){
+	        uint amount = tokens_admin[tokens[i]];
+	        tokens_admin[tokens[i]] = 0;
+	        Token(tokens[i]).transfer(msg.sender, amount);
+	    }
 	}
 	if(eth_admin > 0){
             //send eth to msg.sender
+	    uint amount = eth_admin;
+	    eth_admin = 0;
+	    if(!send(msg.sender)){
+	        throw;
+	    }
         }
     }
 
